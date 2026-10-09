@@ -1,0 +1,952 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Laser Interference Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: instrument-rack shell. A left rail lists the experiments in two tiers; the bench schematic sits on an
+   optical-breadboard hole grid; detector output below it; readouts and controls in a right column. */
+:root{
+  --bg:#e8ebef; --surface:#f4f6f8; --raised:#ffffff; --ink:#131820; --muted:#566070; --line:#c8cfd8;
+  --bench:#dde1e7; --hole:#b4bcc8;
+  --red:#cc1a2a; --violet:#5a32d4; --accent:var(--red);
+  --screen:#06080b;
+  --ui:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0e13; --surface:#11151c; --raised:#1a202a; --ink:#e7eaef; --muted:#8d97a6; --line:#2a313c;
+    --bench:#0e1218; --hole:#252c37; --red:#ff4d5b; --violet:#a78bff; --screen:#030406; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0e13; --surface:#11151c; --raised:#1a202a; --ink:#e7eaef; --muted:#8d97a6; --line:#2a313c;
+  --bench:#0e1218; --hole:#252c37; --red:#ff4d5b; --violet:#a78bff; --screen:#030406; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{max-width:1320px;margin-inline:auto;padding-inline:20px;padding-block:18px 56px;
+  display:grid;grid-template-columns:228px minmax(0,1fr);column-gap:32px;row-gap:22px}
+.app[data-tier="photon"]{--accent:var(--violet)}
+
+.top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px}
+.fringe{width:34px;height:16px;border-radius:1px;
+  background:repeating-linear-gradient(90deg,var(--accent) 0 3px,transparent 3px 6.8px)}
+.top h1{font:700 1.2rem/1 var(--ui);margin:0}
+.top p{margin:0;color:var(--muted);font-size:.93rem}
+
+.rail{display:flex;flex-direction:column;gap:22px;align-self:start;position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px)}
+.grp{display:flex;flex-direction:column;gap:2px}
+.grp h2{font:600 .7rem/1.2 var(--ui);letter-spacing:.09em;text-transform:uppercase;margin:0;color:var(--ink);display:flex;align-items:center;gap:8px}
+.grp h2::before{content:"";width:9px;height:9px;background:var(--g)}
+.grp .sub{margin:3px 0 8px;font-size:.82rem;color:var(--muted)}
+.grp button{font:500 .93rem/1.25 var(--ui);color:var(--ink);background:transparent;border:1px solid transparent;border-radius:3px;
+  padding:7px 10px;text-align:left;cursor:pointer}
+.grp button:hover{background:var(--surface)}
+.grp button[aria-current="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+
+main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.eyebrow{font:600 .72rem/1.2 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.head h2{font:700 clamp(1.5rem,2.6vw,2.05rem)/1.12 var(--ui);margin:0 0 8px;text-wrap:balance;letter-spacing:-.01em}
+.head .lead{font:400 1.08rem/1.5 var(--serif);max-width:64ch;margin:0}
+
+.work{display:grid;grid-template-columns:minmax(0,1fr) 272px;gap:22px;align-items:start}
+.views{display:flex;flex-direction:column;gap:14px;min-width:0}
+figure{margin:0}
+.view{border:1px solid var(--line);background:var(--surface);border-radius:3px;overflow:hidden;min-width:0}
+.view figcaption{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;padding:8px 12px;border-bottom:1px solid var(--line);
+  font:600 .7rem/1.3 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.view figcaption span+span{font-weight:400;letter-spacing:.02em;text-transform:none;font-size:.8rem}
+.scroll{overflow-x:auto}
+#bench{display:block;width:100%;min-width:600px;aspect-ratio:1000/420}
+#out{display:block;width:100%;height:280px}
+
+.side{display:flex;flex-direction:column;gap:20px;min-width:0}
+.readouts{margin:0;border-top:1px solid var(--line)}
+.readouts div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.readouts dt{color:var(--muted);font-size:.86rem}
+.readouts dd{margin:0;font:500 .98rem var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+.controls{display:flex;flex-direction:column;gap:15px}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:.88rem;font-weight:500}
+.ctl .val{font-family:var(--mono);font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl input[type=range]{display:block;width:100%;accent-color:var(--accent);margin:6px 0 0}
+.off{opacity:.42}
+.sw{display:flex;gap:9px;align-items:center;font-size:.9rem;font-weight:500;cursor:pointer}
+.sw input{accent-color:var(--accent);width:16px;height:16px;margin:0;flex:none}
+.seg{border:0;padding:0;margin:0;min-width:0}
+.seg legend{font-size:.88rem;font-weight:500;padding:0;margin-bottom:6px}
+.seg .opts{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg label{flex:1 1 auto;text-align:center;cursor:pointer;position:relative}
+.seg input{position:absolute;opacity:0;inset:0;margin:0}
+.seg span{display:block;padding:7px 10px;font-size:.85rem;background:var(--raised)}
+.seg input:checked+span{background:var(--ink);color:var(--bg);font-weight:600}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:-2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.b{font:600 .86rem var(--ui);padding:8px 14px;border-radius:3px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+.b.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.b:disabled{cursor:default}
+
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px 34px;border-top:1px solid var(--line);padding-top:20px}
+.notes div{min-width:0}
+.notes h3{font:600 .72rem/1.2 var(--ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.notes p{font:400 1rem/1.56 var(--serif);margin:0;max-width:62ch}
+
+@media (max-width:1120px){
+  .work{grid-template-columns:minmax(0,1fr)}
+  .side{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px 28px}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr);padding-inline:16px}
+  .rail{position:static;flex-direction:row;gap:18px;overflow-x:auto;padding-bottom:8px}
+  .grp{flex-direction:row;align-items:center;gap:4px;flex:none}
+  .grp h2{margin-right:6px;white-space:nowrap}
+  .grp .sub{display:none}
+  .grp button{white-space:nowrap;border-color:var(--line)}
+}
+</style>
+
+<div class="app" id="app" data-tier="laser">
+  <header class="top">
+    <div class="brand"><span class="fringe" aria-hidden="true"></span><h1>Laser Interference Lab</h1></div>
+    <p>Ten simulated bench experiments, from a plain laser beam to entangled photon pairs.</p>
+  </header>
+
+  <nav class="rail" id="rail" aria-label="Experiments"></nav>
+
+  <main>
+    <section class="head">
+      <p class="eyebrow" id="tier"></p>
+      <h2 id="name"></h2>
+      <p class="lead" id="lead"></p>
+    </section>
+    <div class="work">
+      <div class="views">
+        <figure class="view">
+          <figcaption><span>Bench</span><span id="benchCap"></span></figcaption>
+          <div class="scroll"><canvas id="bench" role="img" aria-label="Schematic of the optical bench"></canvas></div>
+        </figure>
+        <figure class="view">
+          <figcaption><span>Detectors</span><span id="outCap"></span></figcaption>
+          <canvas id="out" role="img" aria-label="Detector output"></canvas>
+        </figure>
+      </div>
+      <aside class="side">
+        <dl class="readouts" id="readouts"></dl>
+        <form class="controls" id="controls"></form>
+      </aside>
+    </div>
+    <section class="notes">
+      <div><h3>What you are seeing</h3><p id="see"></p></div>
+      <div><h3>Wave or quantum</h3><p id="why"></p></div>
+      <div><h3>On a real bench</h3><p id="kit"></p></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt != null) e.textContent = txt; return e; };
+const TAU = Math.PI * 2, rad = d => d * Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const randn = () => { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * Math.random()); };
+const pc = (v, d = 0) => (v * 100).toFixed(d) + ' %';
+const num = n => n.toLocaleString('en-US');
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const UI = '"Archivo","Helvetica Neue",Arial,sans-serif', MONO = '"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace';
+
+/* ---------- theme colours for canvas ---------- */
+let C = {};
+function readColors() {
+  const cs = getComputedStyle($('#app')), g = n => cs.getPropertyValue(n).trim();
+  C = { ink: g('--ink'), muted: g('--muted'), line: g('--line'), bench: g('--bench'), hole: g('--hole'), red: g('--red'),
+    violet: g('--violet'), accent: g('--accent'), screen: g('--screen'), surface: g('--surface'), raised: g('--raised') };
+}
+function fit(cv, h) {
+  if (h) cv.style.height = h + 'px';
+  const w = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pw = Math.round(w * dpr), ph = Math.round(H * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, H);
+  return [g, w, H];
+}
+
+/* ---------- bench drawing kit (virtual 1000 x 420 breadboard) ---------- */
+function kit(g, W) {
+  const k = W / 1000, X = x => x * k, Y = y => y * k, fs = clamp(k * 16, 10, 12.5);
+  g.fillStyle = C.bench; g.fillRect(0, 0, W, 420 * k);
+  g.fillStyle = C.hole;
+  for (let x = 25; x < 1000; x += 50) for (let y = 35; y < 420; y += 50) { g.beginPath(); g.arc(X(x), Y(y), Math.max(.9, 1.7 * k), 0, TAU); g.fill(); }
+  const P = pts => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); };
+  const b = {
+    beam(pts, col, a = 1) {
+      if (a < .004) return; const v = Math.pow(clamp(a, 0, 1), .55);
+      g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = col; P(pts);
+      g.globalAlpha = .2 * v; g.lineWidth = Math.max(5, 9 * k); g.stroke();
+      g.globalAlpha = .2 + .8 * v; g.lineWidth = Math.max(1.6, 2.6 * k); g.stroke(); g.restore();
+    },
+    fan(x0, y0, x1, ya, yb, col, a) { if (a <= 0) return; g.save(); g.globalAlpha = a; g.fillStyle = col; P([[x0, y0], [x1, ya], [x1, yb]]); g.closePath(); g.fill(); g.restore(); },
+    plate(x, y, deg, len, col, lw, dash) {
+      const r = rad(deg), dx = Math.cos(r) * len / 2, dy = Math.sin(r) * len / 2;
+      g.save(); g.strokeStyle = col; g.lineWidth = lw; if (dash) g.setLineDash(dash); P([[x - dx, y - dy], [x + dx, y + dy]]); g.stroke(); g.restore();
+    },
+    mirror(x, y, deg = -45) { b.plate(x, y, deg, 50, C.ink, Math.max(3, 5 * k)); },
+    bs(x, y, deg = -45, on = true) {
+      g.save(); if (!on) g.globalAlpha = .4;
+      b.plate(x, y, deg, 58, C.raised, Math.max(5, 8 * k)); b.plate(x, y, deg, 58, C.accent, Math.max(2, 3 * k), on ? null : [4, 4]); g.restore();
+    },
+    dial(x, y, deg, label, pos = 'b') {
+      const r = Math.max(9, 17 * k), a = -rad(deg);
+      g.save(); g.beginPath(); g.arc(X(x), Y(y), r, 0, TAU); g.fillStyle = C.raised; g.fill(); g.strokeStyle = C.ink; g.lineWidth = 1.4; g.stroke();
+      g.beginPath(); g.moveTo(X(x) - Math.cos(a) * r, Y(y) - Math.sin(a) * r); g.lineTo(X(x) + Math.cos(a) * r, Y(y) + Math.sin(a) * r);
+      g.strokeStyle = C.accent; g.lineWidth = 2.6; g.stroke(); g.restore();
+      if (label) pos === 'b' ? b.text(x, y + 17 + 14 / k * .9, label) : pos === 't' ? b.text(x, y - 17 - 13 / k * .9, label) : b.text(x + 24, y, label, 'left');
+    },
+    det(x, y, label, lvl = 0, pos = 'r') {
+      const s = Math.max(16, 30 * k);
+      g.save(); g.fillStyle = C.raised; g.strokeStyle = C.ink; g.lineWidth = 1.5;
+      g.fillRect(X(x) - s / 2, Y(y) - s / 2, s, s);
+      if (lvl > 0) { g.globalAlpha = clamp(lvl, 0, 1); g.fillStyle = C.accent; g.shadowColor = C.accent; g.shadowBlur = 14; g.fillRect(X(x) - s / 2, Y(y) - s / 2, s, s); g.globalAlpha = 1; g.shadowBlur = 0; }
+      g.strokeRect(X(x) - s / 2, Y(y) - s / 2, s, s); g.restore();
+      if (!label) return; const o = s / 2 / k + 8;
+      if (pos === 'r') b.text(x + o, y, label, 'left', C.ink, true); else if (pos === 'l') b.text(x - o, y, label, 'right', C.ink, true);
+      else if (pos === 't') b.text(x, y - o - 6 / k, label, 'center', C.ink, true); else b.text(x, y + o + 6 / k, label, 'center', C.ink, true);
+    },
+    src(x, y, label) {
+      g.save(); g.fillStyle = C.ink; g.fillRect(X(x - 38), Y(y - 15), 76 * k, 30 * k); g.fillRect(X(x + 38), Y(y - 6), 8 * k, 12 * k); g.restore();
+      b.text(x, y + 15 + 14 / k * .9, label);
+    },
+    box(x, y, w, h, label, col) {
+      g.save(); g.fillStyle = col || C.raised; g.strokeStyle = C.ink; g.lineWidth = 1.4; g.fillRect(X(x - w / 2), Y(y - h / 2), w * k, h * k); g.strokeRect(X(x - w / 2), Y(y - h / 2), w * k, h * k); g.restore();
+      if (label) b.text(x, y, label, 'center', C.ink, true);
+    },
+    text(x, y, s, al = 'center', col = C.muted, bold) {
+      g.save(); g.font = `${bold ? 600 : 500} ${fs}px ${UI}`; g.fillStyle = col; g.textAlign = al; g.textBaseline = 'middle'; g.fillText(s, X(x), Y(y)); g.restore();
+    },
+    wire(pts) { g.save(); g.strokeStyle = C.muted; g.lineWidth = 1; g.setLineDash([3, 3]); P(pts); g.stroke(); g.restore(); },
+    dot(x, y, col, a = 1) { g.save(); g.globalAlpha = a; g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 12; g.beginPath(); g.arc(X(x), Y(y), Math.max(3.5, 5.5 * k), 0, TAU); g.fill(); g.restore(); },
+    slits(x, y1, y2) {
+      g.save(); g.fillStyle = C.ink; const w = Math.max(3, 6 * k), gap = 7;
+      [[40, y1 - gap], [y1 + gap, y2 - gap], [y2 + gap, 380]].forEach(([a, c]) => g.fillRect(X(x) - w / 2, Y(a), w, (c - a) * k)); g.restore();
+    }
+  };
+  return b;
+}
+const along = (pts, f) => {
+  const L = []; let tot = 0;
+  for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); L.push(d); tot += d; }
+  let d = clamp(f, 0, 1) * tot;
+  for (let i = 0; i < L.length; i++) { if (d <= L[i] || i === L.length - 1) { const t = L[i] ? d / L[i] : 0; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t]; } d -= L[i]; }
+};
+
+/* ---------- plot helpers ---------- */
+function axes(g, x, y, w, h, o) {
+  g.save(); g.font = `400 10.5px ${MONO}`; g.lineWidth = 1;
+  (o.yt || []).forEach(([f, l]) => { const yy = Math.round(y + h - f * h) + .5; g.strokeStyle = C.line; g.beginPath(); g.moveTo(x, yy); g.lineTo(x + w, yy); g.stroke(); g.fillStyle = C.muted; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(l, x - 6, yy); });
+  (o.xt || []).forEach(([f, l]) => { const xx = Math.round(x + f * w) + .5; g.strokeStyle = C.muted; g.beginPath(); g.moveTo(xx, y + h); g.lineTo(xx, y + h + 4); g.stroke(); g.fillStyle = C.muted; g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(l, xx, y + h + 7); });
+  g.strokeStyle = C.muted; g.beginPath(); g.moveTo(x, y + h + .5); g.lineTo(x + w, y + h + .5); g.stroke();
+  g.fillStyle = C.muted; g.font = `500 11px ${UI}`;
+  if (o.xl) { g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(o.xl, x + w / 2, y + h + 22); }
+  if (o.yl) { g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText(o.yl, x - 40, y - 7); }
+  g.restore();
+}
+function curve(g, x, y, w, h, n, fn, col, lw = 2, dash) {
+  g.save(); g.beginPath();
+  for (let i = 0; i <= n; i++) { const f = i / n, px = x + f * w, py = y + h - clamp(fn(f), -.02, 1.04) * h; i ? g.lineTo(px, py) : g.moveTo(px, py); }
+  g.strokeStyle = col; g.lineWidth = lw; g.lineJoin = 'round'; if (dash) g.setLineDash(dash); g.stroke(); g.restore();
+}
+function point(g, px, py, col, r = 3.2, hollow) {
+  g.save(); g.beginPath(); g.arc(px, py, r, 0, TAU);
+  if (hollow) { g.fillStyle = C.surface; g.fill(); g.strokeStyle = col; g.lineWidth = 1.5; g.stroke(); } else { g.fillStyle = col; g.fill(); }
+  g.restore();
+}
+function marker(g, px, y, h) { g.save(); g.strokeStyle = C.ink; g.lineWidth = 1; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(px + .5, y); g.lineTo(px + .5, y + h); g.stroke(); g.restore(); }
+function bars(g, x, y, w, h, arr, max, col, alpha = 1) {
+  const n = arr.length, bw = w / n; g.save(); g.fillStyle = col; g.globalAlpha = alpha;
+  for (let i = 0; i < n; i++) { const v = max ? arr[i] / max : 0; if (v > 0) g.fillRect(x + i * bw, y + h - v * h, Math.max(1, bw - .6), v * h); }
+  g.restore();
+}
+function hbars(g, W, rows) {
+  const x = 16, w = W - 32; let y = 16;
+  rows.forEach(r => {
+    g.save(); g.font = `500 12.5px ${UI}`; g.fillStyle = C.ink; g.textBaseline = 'top'; g.textAlign = 'left'; g.fillText(r.label, x, y);
+    g.font = `500 12px ${MONO}`; g.textAlign = 'right'; g.fillText(r.text, x + w, y);
+    const by = y + 20; g.fillStyle = C.raised; g.fillRect(x, by, w, 14); g.strokeStyle = C.line; g.strokeRect(x + .5, by + .5, w - 1, 13);
+    g.fillStyle = r.col || C.accent; g.fillRect(x, by, clamp(r.value, 0, 1) * w, 14);
+    if (r.pred != null) { const px = x + clamp(r.pred, 0, 1) * w; g.strokeStyle = C.ink; g.lineWidth = 2; g.beginPath(); g.moveTo(px, by - 4); g.lineTo(px, by + 18); g.stroke(); }
+    g.restore(); y += 58;
+  });
+}
+const decay = (fl, dt) => { let any = false; for (const k in fl) if (fl[k] > 0) { fl[k] = Math.max(0, fl[k] - dt * 5); any = true; } return any; };
+const quota = (e, dt) => { e._acc = (e._acc || 0) + e.s.rate * dt; const n = Math.floor(e._acc); e._acc -= n; return n; };
+const runBtns = when => ({ type: 'btns', when, items: [{ label: s => s.run ? 'Pause' : 'Run', fn: e => { e.s.run = !e.s.run; } }, { label: () => 'Clear counts', ghost: true, fn: e => e.reset() }] });
+
+/* ---------- double-slit physics, shared by two experiments ---------- */
+const LL = 1.2656;                      // wavelength x screen distance in mm^2: 632.8 nm at 2 m
+const SLIT_W = 0.04, HALF = 20;         // slit width and half screen width, mm
+function slitParts(p) {
+  let a, b, c;
+  if (!p.mark) { a = b = Math.SQRT1_2; c = 1; if (p.eras) { const q = Math.cos(rad(45 - p.tE)); a *= q; b *= q; } }
+  else {
+    a = Math.SQRT1_2 * Math.cos(rad(p.tA - 45)); b = Math.SQRT1_2 * Math.cos(rad(p.tB - 45)); c = Math.cos(rad(p.tA - p.tB));
+    if (p.eras) { a *= Math.cos(rad(p.tA - p.tE)); b *= Math.cos(rad(p.tB - p.tE)); c = 1; }
+  }
+  const sum = a * a + b * b, cross = 2 * a * b * c;
+  return { sum, cross, V: sum > 1e-9 ? Math.abs(cross) / sum : 0, D: p.mark ? Math.abs(Math.sin(rad(p.tA - p.tB))) : 0 };
+}
+const slitEnv = x => { const u = Math.PI * SLIT_W * x / LL; return u ? Math.pow(Math.sin(u) / u, 2) : 1; };
+const slitI = (x, p, q) => slitEnv(x) * (q.sum + q.cross * Math.cos(TAU * p.d * x / LL)) / 2;
+function drawSlits(b, p, q) {
+  const y1 = 188, y2 = 232, thru = q.sum;
+  b.beam([[106, 210], [296, 210]], C.red, 1);
+  b.fan(304, y1, 884, 70, 350, C.red, .05 + .16 * thru); b.fan(304, y2, 884, 70, 350, C.red, .05 + .16 * thru);
+  b.src(60, 210, 'Laser 632.8 nm'); b.slits(300, y1, y2); b.text(300, 26, 'Double slit');
+  if (p.mark) {
+    b.plate(328, y1, 90, 26, C.accent, 3); b.plate(328, y2, 90, 26, C.accent, 3);
+    b.wire([[334, y1 - 14], [372, 132]]); b.wire([[334, y2 + 14], [372, 288]]);
+    b.dial(385, 112, p.tA, 'A ' + p.tA + '°', 'r'); b.dial(385, 308, p.tB, 'B ' + p.tB + '°', 'r');
+  }
+  if (p.eras) { b.plate(640, 210, 90, 240, C.accent, 3); b.dial(640, 56, p.tE, 'Eraser ' + p.tE + '°', 'r'); }
+  b.plate(886, 210, 90, 300, C.ink, 5); b.text(886, 384, 'Screen at 2 m');
+}
+const mmTicks = [[0, '−20'], [.25, '−10'], [.5, '0'], [.75, '10'], [1, '20']];
+
+/* ---------- Mach-Zehnder, shared by two experiments ---------- */
+const MZ = { S: [70, 300], B1: [250, 300], M1: [750, 300], M2: [250, 110], B2: [750, 110], DR: [905, 110], DU: [750, 40] };
+MZ.low = [MZ.B1, MZ.M1, MZ.B2]; MZ.up = [MZ.B1, MZ.M2, MZ.B2];
+function drawMZ(b, o) {
+  const m = MZ, col = C.red;
+  b.beam([[116, 300], m.B1], col, 1);
+  if (o.block) b.beam([m.B1, [486, 300]], col, o.iLow); else b.beam(m.low, col, o.iLow);
+  b.beam(m.up, col, o.iUp); b.beam([m.B2, [890, 110]], col, o.outR); b.beam([m.B2, [750, 56]], col, o.outU);
+  b.src(70, 300, o.srcLabel); b.bs(250, 300); b.text(250, 344, 'BS1'); b.mirror(750, 300); b.mirror(250, 110);
+  b.bs(750, 110, -45, o.bs2 !== false); b.text(730, 150, o.bs2Label || 'BS2', 'right');
+  b.det(m.DR[0], m.DR[1], o.rLabel, o.rLvl, 'b'); b.det(m.DU[0], m.DU[1], o.uLabel, o.uLvl, 'r');
+}
+
+/* =================================================================== */
+const EXPS = [];
+
+/* 1 — polarisation eraser */
+EXPS.push({
+  id: 'eraser', tier: 'laser', nav: 'Polarisation eraser', name: 'Polarisation quantum eraser',
+  lead: 'Polarisers over the two slits label each path and the fringes vanish. A third polariser at 45° removes the label and the fringes come back.',
+  see: 'The beam is polarised at 45°. With slit polarisers at 0° and 90°, light from the two slits is orthogonally polarised and cannot interfere, so the screen shows only the broad diffraction envelope. Put the eraser in at 45° and both paths are projected onto the same polarisation: fringes return, at half the power. Turn it to 135° and they return shifted by half a period. Those two patterns added together give the fringe-free envelope again.',
+  why: 'With a bright beam this is ordinary wave optics: orthogonal fields do not interfere. It becomes a quantum eraser when the same optics are fed one photon at a time, which is the first experiment in the photon-counting list.',
+  kit: 'HeNe laser at 632.8 nm, a double slit with 0.04 mm slits, three film polarisers and a screen 2 m away. The strip is shown with automatic exposure; the curve keeps the true scale.',
+  benchCap: 'Top view', outCap: 'Screen and intensity profile', outH: () => 300,
+  s: { mark: true, tA: 0, tB: 90, eras: true, tE: 45, d: 0.25 },
+  controls: [
+    { type: 'check', key: 'mark', label: 'Polarisers over the slits' },
+    { type: 'range', key: 'tA', label: 'Slit A polariser', min: 0, max: 180, step: 5, fmt: v => v + '°', when: s => s.mark },
+    { type: 'range', key: 'tB', label: 'Slit B polariser', min: 0, max: 180, step: 5, fmt: v => v + '°', when: s => s.mark },
+    { type: 'check', key: 'eras', label: 'Eraser polariser in the beam' },
+    { type: 'range', key: 'tE', label: 'Eraser angle', min: 0, max: 180, step: 5, fmt: v => v + '°', when: s => s.eras },
+    { type: 'range', key: 'd', label: 'Slit separation', min: 0.1, max: 0.5, step: 0.01, fmt: v => v.toFixed(2) + ' mm' }
+  ],
+  bench(b) { drawSlits(b, this.s, slitParts(this.s)); },
+  out(g, W, H) {
+    const p = this.s, q = slitParts(p), x = 46, w = W - 62, peak = Math.max((q.sum + Math.abs(q.cross)) / 2, 1e-6);
+    g.fillStyle = C.screen; g.fillRect(x, 14, w, 60);
+    for (let i = 0; i < w; i++) { const v = slitI(-HALF + 2 * HALF * i / w, p, q) / peak; if (v > .004) { g.fillStyle = `rgb(${Math.round(255 * Math.pow(v, .7))},${Math.round(46 * v)},${Math.round(58 * v)})`; g.fillRect(x + i, 14, 1.2, 60); } }
+    const top = peak > .501 ? 1 : peak > .2501 ? .5 : .25, py = 112, ph = H - py - 42;
+    axes(g, x, py, w, ph, { xt: mmTicks, yt: [[0, '0'], [.5, pc(top / 2, top < .5 ? 1 : 0)], [1, pc(top)]], xl: 'Position on screen (mm)', yl: 'Intensity, relative to open slits' });
+    curve(g, x, py, w, ph, 200, f => slitEnv(-HALF + 2 * HALF * f) * q.sum / 2 / top, C.muted, 1.2, [4, 4]);
+    curve(g, x, py, w, ph, Math.round(w), f => slitI(-HALF + 2 * HALF * f, p, q) / top, C.accent, 2);
+  },
+  readouts() { const q = slitParts(this.s); return [['Fringe visibility V', pc(q.V)], ['Which-path marking D', pc(q.D)], ['Light reaching the screen', pc(q.sum)], ['Fringe spacing', (LL / this.s.d).toFixed(1) + ' mm']]; }
+});
+
+/* 2 — interaction-free measurement */
+EXPS.push({
+  id: 'bomb', tier: 'laser', nav: 'Interaction-free measurement', name: 'Interaction-free measurement',
+  lead: 'A balanced Mach-Zehnder has one output that stays dark. Blocking an arm lights it up, which reveals the obstacle even when no light touched it.',
+  see: 'With both arms open the two paths cancel at the dark port and all light leaves through the bright port. Put the object in the lower arm and the cancellation is gone, so light reaches the dark port. Switch to single photons and each one has three fates: absorbed by the object, detected at the bright port, which says nothing, or detected at the dark port. A dark-port click proves the object is there, although that photon was not absorbed.',
+  why: 'With a beam this is just an unbalanced interferometer. Photon by photon it is the Elitzur-Vaidman bomb test: with 50/50 splitters, one live bomb is found intact for every two that explode. Sending less light toward the object raises that share toward one half, and combining the idea with the Zeno effect raises it toward one.',
+  kit: 'Two non-polarising beam splitters, two mirrors on kinematic mounts, a card as the object and two photodiodes. The second splitter is the mirror image of the first, so the dark port stays dark for any splitting ratio.',
+  benchCap: 'Mach-Zehnder interferometer', outCap: 'Share of light or photons per outcome', outH: () => 196,
+  s: { obj: true, p: 50, mode: 'photons', run: !calm, rate: 12 }, n: { boom: 0, dark: 0, bright: 0 }, fl: {},
+  controls: [
+    { type: 'check', key: 'obj', label: 'Object in the lower arm', clear: true },
+    { type: 'range', key: 'p', label: 'Light sent to the object arm', min: 5, max: 95, step: 5, fmt: v => v + ' %', clear: true },
+    { type: 'seg', key: 'mode', label: 'Source', options: [['beam', 'Laser beam'], ['photons', 'Single photons']] },
+    { type: 'range', key: 'rate', label: 'Photons per second', min: 1, max: 400, step: 1, fmt: v => v, when: s => s.mode === 'photons' },
+    runBtns(s => s.mode === 'photons')
+  ],
+  probs() { const p = this.s.p / 100; return this.s.obj ? { boom: p, dark: (1 - p) * p, bright: (1 - p) * (1 - p) } : { boom: 0, dark: 0, bright: 1 }; },
+  reset() { this.n = { boom: 0, dark: 0, bright: 0 }; },
+  emit(k) { const q = this.probs(); for (let i = 0; i < k; i++) { const r = Math.random(), o = r < q.boom ? 'boom' : r < q.boom + q.dark ? 'dark' : 'bright'; this.n[o]++; this.fl[o] = 1; } },
+  init() { this.emit(300); this.fl = {}; },
+  tick(dt) { let ch = decay(this.fl, dt); if (this.s.mode === 'photons' && this.s.run) { const k = quota(this, dt); if (k) { this.emit(k); ch = true; } } return ch; },
+  bench(b) {
+    const s = this.s, q = this.probs(), ph = s.mode === 'photons', p = s.p / 100;
+    drawMZ(b, { srcLabel: ph ? 'Single photons' : 'Laser 632.8 nm', iLow: p, iUp: 1 - p, block: s.obj, outR: q.bright, outU: q.dark,
+      rLabel: 'Bright port', uLabel: 'Dark port', rLvl: ph ? this.fl.bright || 0 : q.bright, uLvl: ph ? this.fl.dark || 0 : q.dark });
+    if (s.obj) { b.box(500, 300, 30, 52, '', ph && this.fl.boom ? C.accent : C.ink); b.text(500, 344, 'Object'); }
+    b.text(500, 92, (100 - s.p) + ' %'); b.text(380, 318, s.p + ' %');
+  },
+  out(g, W) {
+    const q = this.probs(), ph = this.s.mode === 'photons', n = this.n, N = n.boom + n.dark + n.bright || 1;
+    const row = (label, k) => ph ? { label, value: n[k] / N, pred: q[k], text: num(n[k]) + '  ' + pc(n[k] / N) } : { label, value: q[k], text: pc(q[k], 1) };
+    hbars(g, W, [row('Absorbed by the object', 'boom'), row('Bright port', 'bright'), row('Dark port: object found, untouched', 'dark')]);
+  },
+  readouts() {
+    const q = this.probs(), n = this.n, ph = this.s.mode === 'photons', y = q.dark + q.boom ? q.dark / (q.dark + q.boom) : 0;
+    const r = [['Dark-port share, predicted', pc(q.dark, 1)], ['Found intact per test that ends', this.s.obj ? pc(y, 1) : '–']];
+    if (ph) r.push(['Photons sent', num(n.boom + n.dark + n.bright)], ['Measured: found ÷ (found + lost)', n.dark + n.boom ? pc(n.dark / (n.dark + n.boom), 1) : '–']);
+    return r;
+  }
+});
+
+/* 3 — quantum Zeno */
+EXPS.push({
+  id: 'zeno', tier: 'laser', nav: 'Quantum Zeno effect', name: 'Quantum Zeno effect',
+  lead: 'A chain of rotators turns horizontal polarisation to vertical in N small steps. Checking the polarisation after every step stops the rotation.',
+  see: 'Each rotator turns the polarisation by 90°/N. Left alone, the light arrives vertical and the final horizontal analyser blocks it. Insert a horizontal polariser after every rotator: each one passes cos²(90°/N) of the light and resets it to horizontal. The more steps, the smaller each loss, and the more light gets through.',
+  why: 'For a beam this is Malus\'s law applied N times. For one photon, every polariser is a measurement asking whether it is still horizontal, and asking often enough freezes the state. Kwiat and colleagues used the same trick to push interaction-free measurement well past the 50 % limit.',
+  kit: 'Half-wave plates or a sugar-solution cell as rotators, a stack of film polarisers, and a power meter after the last analyser.',
+  benchCap: 'Rotator chain, polarisation drawn above the beam', outCap: 'Light passing the final analyser against number of steps', outH: () => 250,
+  s: { N: 6, meas: true },
+  controls: [
+    { type: 'range', key: 'N', label: 'Number of steps N', min: 1, max: 30, step: 1, fmt: v => v },
+    { type: 'check', key: 'meas', label: 'Polariser after every rotator' }
+  ],
+  surv(N, meas) { return meas ? Math.pow(Math.cos(Math.PI / 2 / N), 2 * N) : 0; },
+  bench(b) {
+    const { N, meas } = this.s, x0 = 140, x1 = 800, st = (x1 - x0) / N, c2 = Math.pow(Math.cos(Math.PI / 2 / N), 2), y = 220;
+    const glyph = (x, deg) => { if (N <= 12) b.plate(x, y - 62, -deg, 30, C.ink, 2); };
+    b.beam([[106, y], [x0, y]], C.red, 1); glyph((106 + x0) / 2, 0);
+    let I = 1;
+    for (let i = 1; i <= N; i++) {
+      const xr = x0 + (i - 1) * st, xp = xr + st * .5, xe = xr + st, ang = meas ? 90 / N : i * 90 / N;
+      b.beam([[xr, y], [meas ? xp : xe, y]], C.red, I); if (meas) { I *= c2; b.beam([[xp, y], [xe, y]], C.red, I); }
+      b.box(xr, y, Math.min(16, st * .32), 44, '');
+      if (meas) b.plate(xp, y, 90, 56, C.accent, 3);
+      glyph(xr + st * (meas ? .25 : .5), ang); if (meas && N <= 6) glyph(xp + st * .25, 0);
+    }
+    const fin = meas ? I : 0;
+    b.beam([[x1, y], [850, y]], C.red, I); b.beam([[850, y], [920, y]], C.red, fin);
+    b.src(60, y, 'Laser 632.8 nm'); b.dial(850, y, 0, 'H analyser'); b.det(930, y, pc(fin), fin, 'b');
+    b.text(x0 + (x1 - x0) / 2, 316, N + (N === 1 ? ' rotator' : ' rotators') + ' of ' + (90 / N).toFixed(1) + '° each' + (meas ? ', a horizontal polariser after each' : ', no polarisers between them'));
+    if (N <= 12) b.text(x0 + (x1 - x0) / 2, 112, 'Polarisation direction');
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, y = 22, h = H - y - 42, N = this.s.N, fx = n => (n - 1) / 29;
+    axes(g, x, y, w, h, { xt: [1, 5, 10, 15, 20, 25, 30].map(n => [fx(n), '' + n]), yt: [[0, '0'], [.5, '50 %'], [1, '100 %']], xl: 'Steps N' });
+    g.save(); g.beginPath(); for (let n = 1; n <= 30; n++) { const px = x + fx(n) * w, py = y + h - this.surv(n, true) * h; n > 1 ? g.lineTo(px, py) : g.moveTo(px, py); } g.strokeStyle = C.accent; g.lineWidth = 2; g.stroke(); g.restore();
+    for (let n = 1; n <= 30; n++) point(g, x + fx(n) * w, y + h - this.surv(n, true) * h, C.accent, 2.4);
+    marker(g, x + fx(N) * w, y, h); point(g, x + fx(N) * w, y + h - this.surv(N, this.s.meas) * h, C.ink, 5, true);
+    g.save(); g.font = `500 11px ${UI}`; g.fillStyle = C.muted; g.textAlign = 'right'; g.fillText('With polarisers: cos²ᴺ(90°/N).  Without: always 0 %', x + w, y + h - 8); g.restore();
+  },
+  readouts() { const { N, meas } = this.s; return [['Rotation per step', (90 / N).toFixed(1) + '°'], ['Passed by each polariser', meas ? pc(Math.pow(Math.cos(Math.PI / 2 / N), 2), 1) : '–'], ['Light through the chain', pc(this.surv(N, meas), 1)]]; }
+});
+
+/* 4 — single-photon build-up */
+EXPS.push({
+  id: 'buildup', tier: 'photon', nav: 'One photon at a time', name: 'One photon at a time',
+  lead: 'The source is turned down until photons cross the slits one by one. Each lands at a single point, and the fringes appear only in the statistics.',
+  see: 'Every dot is one detection. No single dot shows a pattern, yet the positions follow the interference intensity, so each photon has to be described by both paths. Add the slit polarisers and the path is marked: the dots fill the envelope with no fringes. Add the 45° eraser and the fringes return in the photons that get through.',
+  why: 'This is where the wave picture stops being enough. A wave would spread over the whole screen, but the detector fires at one place. The pattern exists only as a probability, and marking the path changes that probability even though each photon is detected whole.',
+  kit: 'A strongly attenuated laser, or better a heralded photon from a down-conversion source, with an EMCCD or SPAD-array camera as the screen. Same slits and polarisers as the laser version.',
+  benchCap: 'Same bench as the polarisation eraser', outCap: 'Hits on the camera and their histogram', outH: () => 350,
+  s: { mark: false, eras: false, tE: 45, d: 0.25, rate: 150, run: !calm }, NB: 160,
+  p() { const s = this.s; return { mark: s.mark, tA: 0, tB: 90, eras: s.eras, tE: s.tE, d: s.d }; },
+  controls: [
+    { type: 'check', key: 'mark', label: 'Slit polarisers at 0° and 90°', clear: true },
+    { type: 'check', key: 'eras', label: 'Eraser polariser in the beam', clear: true },
+    { type: 'range', key: 'tE', label: 'Eraser angle', min: 0, max: 180, step: 5, fmt: v => v + '°', when: s => s.eras, clear: true },
+    { type: 'range', key: 'd', label: 'Slit separation', min: 0.1, max: 0.5, step: 0.01, fmt: v => v.toFixed(2) + ' mm', clear: true },
+    { type: 'range', key: 'rate', label: 'Photons per second', min: 5, max: 2000, step: 5, fmt: v => v },
+    runBtns()
+  ],
+  reset() {
+    this.h = new Float64Array(this.NB); this.det = 0; this.lost = 0;
+    if (!this.cv) { this.cv = document.createElement('canvas'); this.cv.width = 800; this.cv.height = 120; }
+    const c = this.cv.getContext('2d'); c.fillStyle = '#05070a'; c.fillRect(0, 0, 800, 120);
+  },
+  emit(k) {
+    const p = this.p(), q = slitParts(p), imax = (q.sum + Math.abs(q.cross)) / 2, c = this.cv.getContext('2d'); c.fillStyle = 'rgba(255,92,104,.9)';
+    for (let i = 0; i < k; i++) {
+      if (Math.random() > q.sum || imax < 1e-9) { this.lost++; continue; }
+      let x, t = 0; do { x = (Math.random() * 2 - 1) * HALF; t++; } while (Math.random() * imax > slitI(x, p, q) && t < 500);
+      const f = (x + HALF) / (2 * HALF); this.h[Math.min(this.NB - 1, Math.floor(f * this.NB))]++; this.det++;
+      c.fillRect(f * 800 - 1, 2 + Math.random() * 116, 2, 2);
+    }
+  },
+  init() { this.reset(); this.emit(700); },
+  tick(dt) { if (!this.s.run) return false; const k = quota(this, dt); if (k) this.emit(k); return k > 0; },
+  bench(b) { const p = this.p(); drawSlits(b, p, slitParts(p)); },
+  out(g, W, H) {
+    const p = this.p(), q = slitParts(p), x = 46, w = W - 62;
+    g.imageSmoothingEnabled = true; g.drawImage(this.cv, x, 14, w, 104);
+    const py = 156, ph = H - py - 42, NB = this.NB; let tot = 0; const th = [];
+    for (let i = 0; i < NB; i++) { const v = slitI(-HALF + 2 * HALF * (i + .5) / NB, p, q); th.push(v); tot += v; }
+    let max = 4; for (let i = 0; i < NB; i++) max = Math.max(max, this.h[i], tot ? th[i] / tot * this.det : 0); max *= 1.08;
+    axes(g, x, py, w, ph, { xt: mmTicks, yt: [[0, '0'], [1, '' + Math.round(max)]], xl: 'Position on screen (mm)', yl: 'Photons per bin, with the expected curve' });
+    bars(g, x, py, w, ph, this.h, max, C.accent, .75);
+    if (tot && this.det) curve(g, x, py, w, ph, NB - 1, f => th[Math.round(f * (NB - 1))] / tot * this.det / max, C.ink, 1.4);
+  },
+  readouts() { const q = slitParts(this.p()); return [['Photons detected', num(this.det)], ['Absorbed in polarisers', num(this.lost)], ['Expected visibility V', pc(q.V)], ['Which-path marking D', pc(q.D)]]; }
+});
+
+/* 5 — Wheeler's delayed choice */
+EXPS.push({
+  id: 'wheeler', tier: 'photon', nav: 'Wheeler’s delayed choice', name: 'Wheeler’s delayed choice',
+  lead: 'The decision to insert or remove the second beam splitter is made while the photon is already inside the interferometer.',
+  see: 'With the second splitter in, the two paths recombine and the share of clicks at D1 follows cos²(φ/2). With it out, each detector looks at one arm and the clicks split 50/50 whatever the phase. In late-choice mode a random generator sets the splitter after the photon has passed the first one. The statistics still match the final setting.',
+  why: 'The photon does not decide at the first splitter whether to act as a wave or as a particle. Only the complete arrangement at detection time fixes what can be said about it. Jacques and colleagues did this in 2007 with a 48 m interferometer and a fast electro-optic switch.',
+  kit: 'A true single-photon source such as an NV centre or a heralded pair, an electro-optic modulator as the switchable splitter, a quantum random number generator and two avalanche photodiodes.',
+  benchCap: 'Lower the rate to follow single photons', outCap: 'Share of clicks at D1 against phase', outH: () => 270,
+  s: { phi: 60, mode: 'late', sweep: false, rate: 3, run: !calm }, fl: {}, last: true, ph: null,
+  controls: [
+    { type: 'seg', key: 'mode', label: 'Second beam splitter', options: [['in', 'In'], ['out', 'Out'], ['late', 'Late random choice']] },
+    { type: 'range', key: 'phi', label: 'Phase φ in the upper arm', min: 0, max: 360, step: 1, fmt: v => Math.round(v) + '°', grab: 'sweep' },
+    { type: 'check', key: 'sweep', label: 'Sweep the phase slowly' },
+    { type: 'range', key: 'rate', label: 'Photons per second', min: 1, max: 600, step: 1, fmt: v => v },
+    runBtns()
+  ],
+  reset() { this.bi = Array.from({ length: 36 }, () => [0, 0]); this.bo = Array.from({ length: 36 }, () => [0, 0]); this.N = 0; },
+  bin() { return Math.floor((((this.s.phi % 360) + 360) % 360) / 10) % 36; },
+  choose() { return this.s.mode === 'in' ? true : this.s.mode === 'out' ? false : Math.random() < .5; },
+  fire(inn) {
+    const p1 = inn ? Math.pow(Math.cos(rad(this.s.phi) / 2), 2) : .5, d1 = Math.random() < p1, B = (inn ? this.bi : this.bo)[this.bin()];
+    B[1]++; if (d1) B[0]++; this.N++; this.fl[d1 ? 'd1' : 'd2'] = 1; this.last = inn;
+  },
+  init() { this.reset(); const keep = this.s.phi; for (let k = 0; k < 36; k++) { this.s.phi = k * 10 + 5; for (let i = 0; i < 60; i++) this.fire(Math.random() < .5); } this.s.phi = keep; this.fl = {}; },
+  tick(dt) {
+    const s = this.s; let ch = decay(this.fl, dt); if (!s.run) return ch;
+    if (s.sweep) { s.phi = (s.phi + dt * 24) % 360; this._refresh(); ch = true; }
+    if (s.rate <= 12) {
+      const ph = this.ph || (this.ph = { t: 0, inn: null, fired: false }); ph.t += dt * s.rate;
+      if (ph.inn === null && ph.t >= .6) ph.inn = this.choose();
+      if (!ph.fired && ph.t >= .9) { this.fire(ph.inn === null ? this.choose() : ph.inn); ph.fired = true; }
+      if (ph.t >= 1) this.ph = null; return true;
+    }
+    this.ph = null; const k = quota(this, dt); for (let i = 0; i < k; i++) this.fire(this.choose()); return ch || k > 0;
+  },
+  bench(b) {
+    const s = this.s, ph = this.ph, late = s.mode === 'late';
+    const inn = !late ? s.mode === 'in' : ph ? (ph.inn === null ? null : ph.inn) : this.last;
+    drawMZ(b, { srcLabel: 'Single photons', iLow: .5, iUp: .5, outR: .3, outU: .3, bs2: inn !== false,
+      bs2Label: inn === null ? 'BS2: not yet chosen' : inn ? 'BS2 in' : 'BS2 out', rLabel: 'D1', uLabel: 'D2', rLvl: this.fl.d1 || 0, uLvl: this.fl.d2 || 0 });
+    b.box(500, 110, 16, 40, ''); b.text(500, 74, 'Phase φ = ' + Math.round(s.phi) + '°');
+    if (late) { b.box(890, 250, 150, 34, 'Random choice'); b.wire([[815, 250], [770, 250], [770, 132]]); }
+    if (ph && s.run) {
+      if (ph.t < .25) { const p = along([[116, 300], MZ.B1], ph.t / .25); b.dot(p[0], p[1], C.red); }
+      else if (ph.t < .9) { const f = (ph.t - .25) / .65, p = along(MZ.low, f), q = along(MZ.up, f); b.dot(p[0], p[1], C.red, .6); b.dot(q[0], q[1], C.red, .6); }
+    }
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, y = 24, h = H - y - 42;
+    axes(g, x, y, w, h, { xt: [0, 90, 180, 270, 360].map(d => [d / 360, d + '°']), yt: [[0, '0'], [.5, '50 %'], [1, '100 %']], xl: 'Phase φ' });
+    curve(g, x, y, w, h, 2, () => .5, C.muted, 1.2, [4, 4]); curve(g, x, y, w, h, 120, f => Math.pow(Math.cos(Math.PI * f), 2), C.accent, 1.6);
+    for (let k = 0; k < 36; k++) {
+      const px = x + (k + .5) / 36 * w, o = this.bo[k], i = this.bi[k];
+      if (o[1]) point(g, px, y + h - o[0] / o[1] * h, C.muted, 3.2, true);
+      if (i[1]) point(g, px, y + h - i[0] / i[1] * h, C.accent, 3.2);
+    }
+    marker(g, x + (this.s.phi % 360) / 360 * w, y, h);
+    g.save(); g.font = `500 11px ${UI}`; g.textBaseline = 'bottom'; g.textAlign = 'left';
+    point(g, x + 6, y - 12, C.accent, 3.2); g.fillStyle = C.muted; g.fillText('BS2 in', x + 14, y - 6);
+    point(g, x + 70, y - 12, C.muted, 3.2, true); g.fillText('BS2 out', x + 78, y - 6); g.restore();
+  },
+  readouts() {
+    const k = this.bin(), i = this.bi[k], o = this.bo[k], th = Math.pow(Math.cos(rad(this.s.phi) / 2), 2);
+    return [['BS2 in: clicks at D1', i[1] ? pc(i[0] / i[1]) : '–'], ['Predicted, cos²(φ/2)', pc(th)], ['BS2 out: clicks at D1', o[1] ? pc(o[0] / o[1]) : '–'], ['Photons detected', num(this.N)]];
+  }
+});
+
+/* 6 — delayed-choice quantum eraser */
+EXPS.push({
+  id: 'dcqe', tier: 'photon', nav: 'Delayed-choice eraser', name: 'Delayed-choice quantum eraser',
+  lead: 'Each signal photon has an entangled partner that carries the which-path information. Whether that information is kept or erased is settled after the signal photon has already been detected.',
+  see: 'The signal photon goes to the scanning detector D0. Its partner reaches D3 or D4, which reveal the slit, or D1 or D2, which sit behind a beam splitter that mixes the two paths. All D0 clicks together show no fringes. Sorting them by the partner\'s detector tells a different story: the D1 and D2 subsets show fringes and anti-fringes, the D3 and D4 subsets show none.',
+  why: 'Nothing travels back in time. The D1 and D2 patterns are shifted by half a period and add up to the fringe-free total, so D0 alone never shows whether erasure happened. The fringes exist only in the coincidence list, and building that list needs an ordinary signal from the partner\'s side.',
+  kit: 'After Kim and colleagues (2000): a 351 nm argon pump, a BBO crystal behind a double slit, five avalanche photodiodes and a coincidence counter. The partner path is about 2.5 m, or 8 ns, longer than the signal path.',
+  benchCap: 'Violet: pump. Red: photon pairs', outCap: 'D0 position histograms, sorted by partner detector', outH: () => 400,
+  s: { bsc: true, rate: 300, run: !calm }, NB: 64, PER: 1.6, SIG: 1.5, XM: 4, fl: {},
+  controls: [
+    { type: 'check', key: 'bsc', label: 'Eraser beam splitter in place', clear: true },
+    { type: 'range', key: 'rate', label: 'Pairs per second', min: 10, max: 3000, step: 10, fmt: v => v },
+    runBtns()
+  ],
+  reset() { this.h = Array.from({ length: 5 }, () => new Float64Array(this.NB)); this.sc = [0, 0, 0, 0, 0]; this.n = [0, 0, 0, 0, 0]; },
+  emit(k) {
+    for (let i = 0; i < k; i++) {
+      let x; do { x = randn() * this.SIG; } while (Math.abs(x) >= this.XM);
+      const c = Math.cos(TAU * x / this.PER); let d;
+      if (Math.random() < .5) d = Math.random() < .5 ? 3 : 4; else if (this.s.bsc) d = Math.random() < (1 + c) / 2 ? 1 : 2; else d = Math.random() < .5 ? 1 : 2;
+      const bin = Math.floor((x + this.XM) / (2 * this.XM) * this.NB);
+      this.h[0][bin]++; this.h[d][bin]++; this.sc[0] += c; this.n[0]++; this.sc[d] += c; this.n[d]++; this.fl['d' + d] = 1; this.fl.d0 = 1;
+    }
+  },
+  init() { this.reset(); this.emit(5000); this.fl = {}; },
+  tick(dt) { let ch = decay(this.fl, dt); if (this.s.run) { const k = quota(this, dt); if (k) { this.emit(k); ch = true; } } return ch; },
+  bench(b) {
+    const f = this.fl, R = C.red;
+    b.beam([[106, 70], [208, 70]], C.violet, 1); b.beam([[226, 66], [884, 66]], R, .8);
+    b.beam([[228, 74], [330, 200], [500, 200]], R, .6); b.beam([[228, 78], [330, 320], [500, 320]], R, .6);
+    b.beam([[500, 200], [500, 144]], R, .3); b.beam([[500, 320], [500, 372]], R, .3);
+    b.beam([[500, 200], [820, 200], [820, 320]], R, .3); b.beam([[500, 320], [820, 320]], R, .3);
+    b.beam([[820, 320], [918, 320]], R, .3); b.beam([[820, 320], [820, 376]], R, .3);
+    b.src(60, 70, 'Pump'); b.slits(172, 62, 78); b.box(217, 70, 22, 44, ''); b.text(217, 108, 'BBO');
+    b.box(520, 66, 10, 46, ''); b.text(520, 28, 'Lens'); b.det(902, 66, 'D0', f.d0 || 0, 'b'); b.text(700, 44, 'Signal photon');
+    b.mirror(330, 200, 26); b.mirror(330, 320, 34); b.text(262, 150, 'Path A', 'right'); b.text(262, 262, 'Path B', 'right');
+    b.bs(500, 200, -45); b.bs(500, 320, 45); b.det(500, 128, 'D3', f.d3 || 0, 'r'); b.det(500, 388, 'D4', f.d4 || 0, 'r');
+    b.mirror(820, 200, 45); b.bs(820, 320, 45, this.s.bsc); b.text(776, 284, this.s.bsc ? 'Eraser BS' : 'BS removed', 'right');
+    b.det(935, 320, 'D1', f.d1 || 0, 'b'); b.det(820, 392, 'D2', f.d2 || 0, 'r'); b.text(650, 260, 'Partner photon');
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, rh = (H - 60) / 5, on = this.s.bsc;
+    const lab = ['D0, every click', on ? 'D0 when D1 clicks: path erased' : 'D0 when D1 clicks: path B', on ? 'D0 when D2 clicks: path erased' : 'D0 when D2 clicks: path A', 'D0 when D3 clicks: path A known', 'D0 when D4 clicks: path B known'];
+    let m0 = 4, m = 4; for (let i = 0; i < this.NB; i++) { m0 = Math.max(m0, this.h[0][i]); for (let d = 1; d < 5; d++) m = Math.max(m, this.h[d][i]); }
+    for (let d = 0; d < 5; d++) {
+      const y = 10 + d * rh, h = rh - 24;
+      bars(g, x, y + 18, w, h, this.h[d], (d ? m : m0) * 1.05, d === 0 ? C.ink : d < 3 ? C.accent : C.muted, d === 0 ? .8 : .85);
+      g.save(); g.strokeStyle = C.line; g.beginPath(); g.moveTo(x, y + 18 + h + .5); g.lineTo(x + w, y + 18 + h + .5); g.stroke();
+      g.font = `500 11.5px ${UI}`; g.fillStyle = C.ink; g.textBaseline = 'top'; g.fillText(lab[d], x, y); g.restore();
+    }
+    axes(g, x, H - 44, w, 0, { xt: [[0, '−4'], [.25, '−2'], [.5, '0'], [.75, '2'], [1, '4']], xl: 'D0 position (mm)' });
+  },
+  readouts() { const v = d => this.n[d] ? (2 * this.sc[d] / this.n[d] >= 0 ? '+' : '−') + Math.abs(2 * this.sc[d] / this.n[d]).toFixed(2) : '–'; return [['Pairs detected', num(this.n[0])], ['Fringe contrast, all D0', v(0)], ['Contrast, D1 subset', v(1)], ['Contrast, D2 subset', v(2)], ['Contrast, D3 subset', v(3)]]; }
+});
+
+/* 7 — Hong-Ou-Mandel */
+EXPS.push({
+  id: 'hom', tier: 'photon', nav: 'Hong-Ou-Mandel dip', name: 'Hong-Ou-Mandel dip',
+  lead: 'Two identical photons reach a beam splitter from opposite sides at the same moment. They always leave together.',
+  see: 'The detectors behind the two outputs count coincidences. When the paths differ by more than the photons\' coherence length, the photons act independently and half of the pairs give a coincidence. At equal path lengths the two ways of getting one photon in each output cancel, and the coincidences drop to zero. Rotating the polarisation of one photon makes the two distinguishable and fills the dip in.',
+  why: 'Classical light can produce a dip of at most 50 %; anything deeper is two-photon interference. The dip width is the length of the photon wave packet, here tens of micrometres or a few hundred femtoseconds, far shorter than any detector can time directly.',
+  kit: 'A 405 nm diode pump, a BBO crystal, 810 nm interference filters, a motorised delay stage, a 50/50 beam splitter and two single-photon avalanche diodes on a coincidence counter.',
+  benchCap: 'Violet: pump. Red: 810 nm pairs', outCap: 'Coincidences per pair against path difference', outH: () => 270,
+  s: { x: 0, lc: 18, th: 0, sweep: true, rate: 500, run: !calm }, fl: {}, dir: 1, NB: 61,
+  controls: [
+    { type: 'range', key: 'x', label: 'Path difference', min: -60, max: 60, step: 1, fmt: v => (v > 0 ? '+' : '') + Math.round(v) + ' µm', grab: 'sweep' },
+    { type: 'check', key: 'sweep', label: 'Scan the delay stage' },
+    { type: 'range', key: 'lc', label: 'Photon coherence length', min: 8, max: 40, step: 1, fmt: v => v + ' µm', clear: true },
+    { type: 'range', key: 'th', label: 'Polarisation mismatch', min: 0, max: 90, step: 5, fmt: v => v + '°', clear: true },
+    { type: 'range', key: 'rate', label: 'Pairs per second', min: 10, max: 3000, step: 10, fmt: v => v },
+    runBtns()
+  ],
+  pc(x) { return .5 * (1 - Math.pow(Math.cos(rad(this.s.th)), 2) * Math.exp(-Math.pow(x / this.s.lc, 2))); },
+  reset() { this.b = Array.from({ length: this.NB }, () => [0, 0]); },
+  emit(k) { const x = this.s.x, B = this.b[clamp(Math.round((x + 60) / 2), 0, this.NB - 1)], p = this.pc(x); for (let i = 0; i < k; i++) { B[1]++; if (Math.random() < p) { B[0]++; this.fl.d1 = this.fl.d2 = 1; } else this.fl[Math.random() < .5 ? 'd1' : 'd2'] = 1; } },
+  init() { this.reset(); const keep = this.s.x; for (let i = 0; i < this.NB; i++) { this.s.x = i * 2 - 60; this.emit(160); } this.s.x = keep; this.fl = {}; },
+  tick(dt) {
+    const s = this.s; let ch = decay(this.fl, dt); if (!s.run) return ch;
+    if (s.sweep) { s.x += this.dir * dt * 14; if (s.x > 60) { s.x = 60; this.dir = -1; } if (s.x < -60) { s.x = -60; this.dir = 1; } this._refresh(); ch = true; }
+    const k = quota(this, dt); if (k) this.emit(k); return ch || k > 0;
+  },
+  bench(b) {
+    const s = this.s, off = s.x * .32, ym = 325 + off, R = C.red;
+    b.beam([[106, 210], [172, 210]], C.violet, 1);
+    b.beam([[198, 205], [420, 95], [660, 210]], R, .8); b.beam([[198, 215], [420, ym], [660, 210]], R, .8);
+    b.beam([[660, 210], [866, 112]], R, .5); b.beam([[660, 210], [866, 308]], R, .5);
+    b.src(60, 210, 'Pump 405 nm'); b.box(185, 210, 22, 50, ''); b.text(185, 252, 'BBO');
+    b.mirror(420, 95, 0); b.box(420, ym + 14, 84, 18, ''); b.mirror(420, ym, 0); b.text(420, ym + 44, 'Delay stage ' + (s.x > 0 ? '+' : '') + Math.round(s.x) + ' µm');
+    b.dial(300, 268 + off / 2, s.th / 2, 'λ/2 plate', 'b');
+    b.bs(660, 210, 0); b.text(660, 250, 'BS 50/50');
+    b.det(880, 105, 'D1', this.fl.d1 || 0, 't'); b.det(880, 315, 'D2', this.fl.d2 || 0, 'b');
+    b.wire([[900, 105], [945, 105], [945, 190]]); b.wire([[900, 315], [945, 315], [945, 230]]); b.box(945, 210, 78, 34, 'Coinc.');
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, y = 22, h = H - y - 42, top = .6, fx = v => (v + 60) / 120;
+    axes(g, x, y, w, h, { xt: [-60, -30, 0, 30, 60].map(v => [fx(v), (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v)]), yt: [[0, '0'], [.25 / top, '25 %'], [.5 / top, '50 %']], xl: 'Path difference (µm)' });
+    curve(g, x, y, w, h, 200, f => this.pc(f * 120 - 60) / top, C.accent, 1.6);
+    this.b.forEach((B, i) => { if (B[1]) point(g, x + fx(i * 2 - 60) * w, y + h - clamp(B[0] / B[1] / top, 0, 1.04) * h, C.ink, 2.6); });
+    marker(g, x + fx(this.s.x) * w, y, h);
+  },
+  readouts() {
+    const s = this.s, B = this.b[clamp(Math.round((s.x + 60) / 2), 0, this.NB - 1)];
+    return [['Coincidences here, predicted', pc(this.pc(s.x), 1)], ['Measured at this position', B[1] ? pc(B[0] / B[1], 1) : '–'], ['Time delay', (s.x / .2998).toFixed(0) + ' fs'], ['Dip visibility', pc(Math.pow(Math.cos(rad(s.th)), 2))]];
+  }
+});
+
+/* 8 — Bell / CHSH */
+EXPS.push({
+  id: 'bell', tier: 'photon', nav: 'Bell test (CHSH)', name: 'Bell test with the CHSH inequality',
+  lead: 'Polarisation-entangled pairs are measured at two stations, each switching between two analyser angles. If the outcomes were fixed in advance, the combined correlation S could not exceed 2.',
+  see: 'Each pair gives +1 or −1 at Alice and at Bob. For every pair of angles the correlation E is the share of equal results minus the share of unequal ones, and S = E(a,b) − E(a,b′) + E(a′,b) + E(a′,b′). With entangled pairs and the angles 0°, 45°, 22.5° and 67.5°, S reaches 2√2 ≈ 2.83. Switch the source to pairs that carry a shared hidden polarisation and S stops at 2.',
+  why: 'The hidden-polarisation source is the best a local model can do, and its correlation curve is a triangle wave. Entanglement gives a cosine, which is stronger at intermediate angles, and that gap is what the experiment measures. Lower the source quality and the violation disappears at about 71 % visibility.',
+  kit: 'A 405 nm pump, a crossed pair of type-I BBO crystals, two polarisers on rotation mounts, 810 nm filters, two single-photon detectors and a coincidence counter. This is a standard teaching-lab kit.',
+  benchCap: 'Each analyser switches randomly between its two angles', outCap: 'Correlation against angle difference, and the value of S', outH: () => 350,
+  s: { a: 0, a2: 45, b: 22.5, b2: 67.5, v: 97, src: 'ent', rate: 300, run: !calm }, fl: {}, cur: [0, 0],
+  controls: [
+    { type: 'seg', key: 'src', label: 'Source', options: [['ent', 'Entangled pairs'], ['lhv', 'Hidden polarisation']], clear: true },
+    { type: 'range', key: 'a', label: 'Alice, angle a', min: 0, max: 180, step: 2.5, fmt: v => v + '°', clear: true },
+    { type: 'range', key: 'a2', label: 'Alice, angle a′', min: 0, max: 180, step: 2.5, fmt: v => v + '°', clear: true },
+    { type: 'range', key: 'b', label: 'Bob, angle b', min: 0, max: 180, step: 2.5, fmt: v => v + '°', clear: true },
+    { type: 'range', key: 'b2', label: 'Bob, angle b′', min: 0, max: 180, step: 2.5, fmt: v => v + '°', clear: true },
+    { type: 'range', key: 'v', label: 'Source quality (visibility)', min: 0, max: 100, step: 1, fmt: v => v + ' %', clear: true },
+    { type: 'range', key: 'rate', label: 'Pairs per second', min: 10, max: 5000, step: 10, fmt: v => v },
+    { type: 'btns', items: [{ label: s => s.run ? 'Pause' : 'Run', fn: e => { e.s.run = !e.s.run; } }, { label: () => 'Clear counts', ghost: true, fn: e => e.reset() }, { label: () => 'Best angles', ghost: true, fn: e => { Object.assign(e.s, { a: 0, a2: 45, b: 22.5, b2: 67.5 }); e.reset(); } }] }
+  ],
+  ang() { const s = this.s; return [[s.a, s.a2], [s.b, s.b2]]; },
+  reset() { this.c = [0, 1, 2, 3].map(() => [0, 0]); },
+  theory(dDeg, src) { const d = rad(dDeg), v = this.s.v / 100; if (src === 'ent') return v * Math.cos(2 * d); let w = Math.abs(((d + Math.PI / 2) % Math.PI + Math.PI) % Math.PI - Math.PI / 2); return v * (1 - 4 * w / Math.PI); },
+  emit(k) {
+    const [A, B] = this.ang(), v = this.s.v / 100, ent = this.s.src === 'ent';
+    for (let n = 0; n < k; n++) {
+      const i = Math.random() < .5 ? 0 : 1, j = Math.random() < .5 ? 0 : 1, al = rad(A[i]), be = rad(B[j]); let same;
+      if (ent) same = Math.random() < (1 + v * Math.cos(2 * (al - be))) / 2;
+      else { const lam = Math.random() * Math.PI, ra = Math.cos(2 * (al - lam)) >= 0; let rb = Math.cos(2 * (be - lam)) >= 0; if (Math.random() > v) rb = Math.random() < .5; same = ra === rb; }
+      const c = this.c[i * 2 + j]; c[1]++; if (same) c[0]++; this.cur = [i, j];
+    }
+    this.fl.a = this.fl.b = 1;
+  },
+  E(i) { const c = this.c[i]; return c[1] ? (2 * c[0] - c[1]) / c[1] : 0; },
+  S() { const E = [0, 1, 2, 3].map(i => this.E(i)); let var_ = 0; this.c.forEach((c, i) => { var_ += c[1] ? (1 - E[i] * E[i]) / c[1] : 1; }); return { S: E[0] - E[1] + E[2] + E[3], sig: Math.sqrt(var_), E }; },
+  init() { this.reset(); this.emit(4000); this.fl = {}; },
+  tick(dt) { let ch = decay(this.fl, dt); if (this.s.run) { const k = quota(this, dt); if (k) { this.emit(k); ch = true; } } return ch; },
+  bench(b) {
+    const [A, B] = this.ang(), [i, j] = this.cur, R = C.red;
+    b.beam([[500, 76], [500, 188]], C.violet, 1); b.beam([[478, 210], [106, 210]], R, .8); b.beam([[522, 210], [894, 210]], R, .8);
+    b.src(500, 60, ''); b.text(560, 60, 'Pump 405 nm', 'left'); b.box(500, 210, 44, 44, 'BBO');
+    b.dial(290, 210, A[i], 'a = ' + A[0] + '°,  a′ = ' + A[1] + '°'); b.dial(710, 210, B[j], 'b = ' + B[0] + '°,  b′ = ' + B[1] + '°');
+    b.text(290, 164, 'Now: ' + (i ? 'a′' : 'a'), 'center', C.ink, true); b.text(710, 164, 'Now: ' + (j ? 'b′' : 'b'), 'center', C.ink, true);
+    b.det(90, 210, 'Alice', this.fl.a || 0, 't'); b.det(910, 210, 'Bob', this.fl.b || 0, 't');
+    b.wire([[90, 232], [90, 340], [430, 340]]); b.wire([[910, 232], [910, 340], [570, 340]]); b.box(500, 340, 140, 36, 'Coincidence');
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, y = 24, h = 170, s = this.s, other = s.src === 'ent' ? 'lhv' : 'ent', fx = d => (d + 90) / 180, fy = E => (E + 1) / 2;
+    axes(g, x, y, w, h, { xt: [-90, -45, 0, 45, 90].map(d => [fx(d), (d < 0 ? '−' : '') + Math.abs(d) + '°']), yt: [[0, '−1'], [.5, '0'], [1, '+1']], xl: 'Angle difference between the two analysers', yl: 'Correlation E' });
+    curve(g, x, y, w, h, 180, f => fy(this.theory(f * 180 - 90, other)), C.muted, 1.2, [4, 4]); curve(g, x, y, w, h, 180, f => fy(this.theory(f * 180 - 90, s.src)), C.accent, 1.8);
+    const [A, B] = this.ang(), names = ['ab', 'ab′', 'a′b', 'a′b′'];
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      const c = this.c[i * 2 + j]; if (!c[1]) continue; let d = ((A[i] - B[j] + 90) % 180 + 180) % 180 - 90; const px = x + fx(d) * w, py = y + h - fy(this.E(i * 2 + j)) * h;
+      point(g, px, py, C.ink, 4); g.save(); g.font = `600 11px ${UI}`; g.fillStyle = C.ink; const k = i * 2 + j; g.textAlign = k === 0 ? 'right' : k === 3 ? 'left' : 'center'; g.fillText(names[k], px + (k === 0 ? -8 : k === 3 ? 8 : 0), py - (k === 0 || k === 3 ? 4 : 9)); g.restore();
+    }
+    const r = this.S(), gy = y + h + 82, sx = v => x + clamp(v, 0, 3) / 3 * w, S = Math.abs(r.S);
+    g.save(); g.fillStyle = C.raised; g.fillRect(x, gy, w, 12); g.strokeStyle = C.line; g.strokeRect(x + .5, gy + .5, w - 1, 11);
+    g.globalAlpha = .22; g.fillStyle = C.accent; g.fillRect(sx(2), gy, sx(2 * Math.SQRT2) - sx(2), 12); g.globalAlpha = 1;
+    g.fillStyle = C.accent; g.fillRect(x, gy + 3, sx(S) - x, 6);
+    g.strokeStyle = C.ink; g.lineWidth = 2; [2, 2 * Math.SQRT2].forEach(v => { g.beginPath(); g.moveTo(sx(v), gy - 5); g.lineTo(sx(v), gy + 17); g.stroke(); });
+    g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx(S - r.sig), gy + 6); g.lineTo(sx(S + r.sig), gy + 6); g.stroke();
+    g.font = `500 11px ${UI}`; g.fillStyle = C.muted; g.textBaseline = 'top'; g.textAlign = 'center'; g.fillText('Local limit 2', sx(2), gy + 21); g.fillText('2√2', sx(2 * Math.SQRT2), gy + 21);
+    g.textAlign = 'left'; g.fillText('0', x, gy + 21);
+    g.font = `600 12.5px ${UI}`; g.fillStyle = C.ink; g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText('|S| = ' + S.toFixed(2) + ' ± ' + r.sig.toFixed(2) + (S - 2 > 2 * r.sig ? '   above the local limit' : '   within the local limit'), x, gy - 9); g.restore();
+  },
+  readouts() { const r = this.S(), f = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2); return [['S', f(r.S) + ' ± ' + r.sig.toFixed(2)], ['E(a,b)   E(a,b′)', f(r.E[0]) + '  ' + f(r.E[1])], ['E(a′,b)  E(a′,b′)', f(r.E[2]) + '  ' + f(r.E[3])], ['Pairs detected', num(this.c.reduce((t, c) => t + c[1], 0))]]; }
+});
+
+/* 9 — Franson */
+EXPS.push({
+  id: 'franson', tier: 'photon', nav: 'Franson interferometer', name: 'Franson interferometer',
+  lead: 'Each photon of a pair passes its own unbalanced interferometer. Neither detector sees fringes, but the coincidences between them do.',
+  see: 'The long arm is 2 ns longer than the short one, far more than the photons\' coherence time, so the single count rates stay flat when a phase changes. The arrival-time difference shows three peaks. The centre peak holds the pairs where both photons took the short arm or both took the long arm. Those two cases cannot be told apart, so they interfere, and the peak height follows 1 + cos(φA + φB).',
+  why: 'The pair is created at an unknown moment within the pump\'s long coherence time. That energy-time entanglement is what makes short-short and long-long indistinguishable. Widen the coincidence window to include the side peaks and the visibility falls to 50 %, the most a classical model can reach.',
+  kit: 'A narrow-linewidth 405 nm pump, a PPKTP or BBO crystal, two unbalanced interferometers with piezo phase control, and timing electronics with sub-nanosecond resolution.',
+  benchCap: 'One unbalanced interferometer per photon', outCap: 'Arrival-time difference, and coincidences against total phase', outH: () => 390,
+  s: { pa: 0, pb: 0, win: 'narrow', sweep: true, rate: 1200, run: !calm }, fl: {}, NT: 61,
+  controls: [
+    { type: 'range', key: 'pa', label: 'Phase φA', min: 0, max: 360, step: 1, fmt: v => Math.round(v) + '°', grab: 'sweep' },
+    { type: 'range', key: 'pb', label: 'Phase φB', min: 0, max: 360, step: 1, fmt: v => Math.round(v) + '°' },
+    { type: 'check', key: 'sweep', label: 'Sweep φA slowly' },
+    { type: 'seg', key: 'win', label: 'Coincidence window', options: [['narrow', 'Centre peak only'], ['wide', 'All three peaks']], clear: true },
+    { type: 'range', key: 'rate', label: 'Pairs per second', min: 20, max: 6000, step: 20, fmt: v => v },
+    runBtns()
+  ],
+  half() { return this.s.win === 'narrow' ? .7 : 2.8; },
+  bin() { return Math.floor(((this.s.pa + this.s.pb) % 360 + 360) % 360 / 10) % 36; },
+  reset() { this.b = Array.from({ length: 36 }, () => [0, 0]); this.N = 0; this.sA = 0; if (!this.t) this.t = new Float64Array(this.NT); },
+  emit(k) {
+    const c = Math.cos(rad(this.s.pa + this.s.pb)), B = this.b[this.bin()], half = this.half();
+    for (let i = 0; i < k; i++) {
+      this.N++; B[1]++; const central = Math.random() < .5, ap = Math.random() < .5; if (ap) this.sA++;
+      const bp = central ? (Math.random() < (1 + c) / 2 ? ap : !ap) : Math.random() < .5;
+      if (!(ap && bp)) continue;
+      const dtv = (central ? 0 : Math.random() < .5 ? -2 : 2) + randn() * .16, tb = Math.floor((dtv + 3.05) / .1);
+      if (tb >= 0 && tb < this.NT) this.t[tb]++; if (Math.abs(dtv) < half) { B[0]++; this.fl.a = this.fl.b = 1; }
+    }
+  },
+  init() { this.reset(); const keep = this.s.pa; for (let k = 0; k < 36; k++) { this.s.pa = k * 10 + 5; this.emit(500); } this.s.pa = keep; this.t.fill(0); this.emit(4000); this.fl = {}; },
+  tick(dt) {
+    const s = this.s; let ch = decay(this.fl, dt); if (!s.run) return ch;
+    if (s.sweep) { s.pa = (s.pa + dt * 30) % 360; this._refresh(); }
+    const f = Math.exp(-dt / 1.2); for (let i = 0; i < this.NT; i++) this.t[i] *= f;
+    const k = quota(this, dt); if (k) this.emit(k); return true;
+  },
+  bench(b) {
+    const s = this.s, R = C.red;
+    b.beam([[500, 76], [500, 188]], C.violet, 1);
+    b.beam([[478, 210], [350, 210]], R, .8); b.beam([[350, 210], [210, 210]], R, .4); b.beam([[350, 210], [350, 110], [210, 110], [210, 210]], R, .4); b.beam([[210, 210], [106, 210]], R, .5);
+    b.beam([[522, 210], [650, 210]], R, .8); b.beam([[650, 210], [790, 210]], R, .4); b.beam([[650, 210], [650, 110], [790, 110], [790, 210]], R, .4); b.beam([[790, 210], [894, 210]], R, .5);
+    b.src(500, 60, ''); b.text(560, 60, 'Pump 405 nm', 'left'); b.box(500, 210, 44, 44, 'BBO');
+    b.bs(350, 210, 45); b.mirror(350, 110, 45); b.mirror(210, 110, -45); b.bs(210, 210, -45);
+    b.bs(650, 210, -45); b.mirror(650, 110, -45); b.mirror(790, 110, 45); b.bs(790, 210, 45);
+    b.box(280, 110, 16, 38, ''); b.text(280, 72, 'φA = ' + Math.round(s.pa) + '°'); b.box(720, 110, 16, 38, ''); b.text(720, 72, 'φB = ' + Math.round(s.pb) + '°');
+    b.text(280, 232, 'Short'); b.text(280, 146, 'Long, +2 ns'); b.text(720, 232, 'Short'); b.text(720, 146, 'Long, +2 ns');
+    b.det(90, 210, 'A', this.fl.a || 0, 't'); b.det(910, 210, 'B', this.fl.b || 0, 't');
+    b.wire([[90, 232], [90, 340], [420, 340]]); b.wire([[910, 232], [910, 340], [580, 340]]); b.box(500, 340, 160, 36, 'Time difference');
+  },
+  out(g, W, H) {
+    const x = 46, w = W - 62, y1 = 22, h1 = 100, half = this.half(), ft = t => (t + 3.05) / 6.1;
+    g.save(); g.globalAlpha = .16; g.fillStyle = C.accent; g.fillRect(x + ft(-half) * w, y1, (ft(half) - ft(-half)) * w, h1); g.restore();
+    let m = 4; for (let i = 0; i < this.NT; i++) m = Math.max(m, this.t[i]);
+    bars(g, x, y1, w, h1, this.t, m * 1.08, C.ink, .8);
+    axes(g, x, y1, w, h1, { xt: [-2, -1, 0, 1, 2].map(t => [ft(t), (t < 0 ? '−' : t > 0 ? '+' : '') + Math.abs(t)]), xl: 'Arrival-time difference (ns), coincidence window shaded', yl: 'Recent coincidences between A and B' });
+    const y2 = y1 + h1 + 78, h2 = H - y2 - 42, top = .4, wide = this.s.win === 'wide';
+    axes(g, x, y2, w, h2, { xt: [0, 90, 180, 270, 360].map(d => [d / 360, d + '°']), yt: [[0, '0'], [.125 / top, '12.5 %'], [.25 / top, '25 %'], [.375 / top, '37.5 %']], xl: 'Total phase φA + φB', yl: 'Coincidences in the window, per pair' });
+    curve(g, x, y2, w, h2, 120, f => (1 + Math.cos(TAU * f) + (wide ? 1 : 0)) / 8 / top, C.accent, 1.6);
+    this.b.forEach((B, k) => { if (B[1]) point(g, x + (k + .5) / 36 * w, y2 + h2 - clamp(B[0] / B[1] / top, 0, 1.04) * h2, C.ink, 2.8); });
+    marker(g, x + (((this.s.pa + this.s.pb) % 360) / 360) * w, y2, h2);
+  },
+  readouts() {
+    const c = Math.cos(rad(this.s.pa + this.s.pb)), wide = this.s.win === 'wide';
+    return [['Singles at A, share of pairs', this.N ? pc(this.sA / this.N, 1) : '–'], ['Coincidences now, predicted', pc((1 + c + (wide ? 1 : 0)) / 8, 1)], ['Coincidence visibility', wide ? '50 %' : '100 %'], ['Total phase', Math.round((this.s.pa + this.s.pb) % 360) + '°']];
+  }
+});
+
+/* 10 — ghost imaging */
+EXPS.push({
+  id: 'ghost', tier: 'photon', nav: 'Ghost imaging', name: 'Ghost imaging',
+  lead: 'One photon of each pair meets the object and is collected by a detector with no spatial resolution. The image forms on a camera that only ever sees the partner photons.',
+  see: 'The camera frame built from all partner photons is a featureless spot. Keep only the frames where the bucket detector behind the object also clicked, and the object appears. Its sharpness is set by how tightly the positions of the two photons are correlated.',
+  why: 'Neither detector holds the image on its own: the bucket has no position information and the camera never saw the object. The image is in the correlations. Position-correlated classical beams can produce ghost images too, so this experiment shows what correlations can do; it is not a proof of entanglement.',
+  kit: 'A 405 nm pump and BBO crystal, a transmission mask as the object, a bucket detector behind a collecting lens, and an intensified or SPAD-array camera triggered by the bucket.',
+  benchCap: 'The object sits only in the upper path', outCap: 'Object, raw camera frame, and coincidence-gated frame', outH: W => Math.min((W - 56) / 3, 230) + 64,
+  s: { obj: 'psi', blur: 1, rate: 6000, run: !calm }, G: 64, fl: {},
+  controls: [
+    { type: 'seg', key: 'obj', label: 'Object mask', options: [['psi', 'ψ'], ['lam', 'λ'], ['slits', 'Double slit'], ['ring', 'Ring']], clear: true },
+    { type: 'range', key: 'blur', label: 'Position correlation width', min: 0, max: 6, step: .5, fmt: v => v.toFixed(1) + ' px', clear: true },
+    { type: 'range', key: 'rate', label: 'Pairs per second', min: 200, max: 30000, step: 200, fmt: v => v },
+    runBtns()
+  ],
+  mk() { const c = document.createElement('canvas'); c.width = c.height = this.G; return c; },
+  reset() {
+    const G = this.G; if (!this.cv) this.cv = [this.mk(), this.mk(), this.mk()];
+    this.raw = new Float32Array(G * G); this.gat = new Float32Array(G * G); this.N = 0; this.bk = 0;
+    const c = this.cv[0].getContext('2d', { willReadFrequently: true }), o = this.s.obj; c.clearRect(0, 0, G, G); c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+    if (o === 'slits') { c.fillRect(21, 14, 7, 36); c.fillRect(36, 14, 7, 36); }
+    else if (o === 'ring') { c.lineWidth = 7; c.beginPath(); c.arc(32, 32, 15, 0, TAU); c.stroke(); }
+    else { c.font = '600 50px Georgia, "Times New Roman", serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(o === 'psi' ? 'ψ' : 'λ', 32, 31); }
+    const d = c.getImageData(0, 0, G, G).data; this.mask = new Uint8Array(G * G); for (let i = 0; i < G * G; i++) this.mask[i] = d[i * 4 + 3] > 110 ? 1 : 0;
+    const im = c.createImageData(G, G); for (let i = 0; i < G * G; i++) { const v = this.mask[i] ? 235 : 8; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } c.putImageData(im, 0, 0);
+  },
+  emit(k) {
+    const G = this.G, bl = this.s.blur;
+    for (let i = 0; i < k; i++) {
+      const x = 32 + randn() * 12, y = 32 + randn() * 12, xi = Math.round(x), yi = Math.round(y); if (xi < 0 || yi < 0 || xi >= G || yi >= G) continue;
+      this.N++; const cx = Math.round(x + randn() * bl), cy = Math.round(y + randn() * bl), inC = cx >= 0 && cy >= 0 && cx < G && cy < G;
+      if (inC) this.raw[cy * G + cx]++; if (this.mask[yi * G + xi]) { this.bk++; if (inC) this.gat[cy * G + cx]++; }
+    }
+  },
+  init() { this.reset(); this.emit(90000); },
+  tick(dt) { if (!this.s.run) return false; const k = quota(this, dt); if (k) this.emit(k); return k > 0; },
+  paint(cv, a) {
+    const G = this.G, c = cv.getContext('2d'), im = c.createImageData(G, G); let m = 1; for (let i = 0; i < a.length; i++) if (a[i] > m) m = a[i];
+    for (let i = 0; i < a.length; i++) { const v = Math.pow(a[i] / m, .75); im.data[i * 4] = 8 + 247 * v; im.data[i * 4 + 1] = 8 + 215 * v; im.data[i * 4 + 2] = 12 + 225 * v; im.data[i * 4 + 3] = 255; } c.putImageData(im, 0, 0);
+  },
+  bench(b) {
+    const R = C.red;
+    b.beam([[106, 210], [182, 210]], C.violet, 1);
+    b.beam([[212, 205], [330, 110], [540, 110]], R, .8); b.beam([[540, 110], [786, 110]], R, .35); b.beam([[212, 215], [330, 310], [760, 310]], R, .8);
+    b.src(60, 210, 'Pump 405 nm'); b.box(197, 210, 22, 50, ''); b.text(197, 252, 'BBO'); b.mirror(330, 110, -20); b.mirror(330, 310, 20);
+    b.box(540, 110, 12, 70, '', C.ink); b.text(540, 60, 'Object mask'); b.box(700, 110, 10, 60, ''); b.text(700, 60, 'Collecting lens');
+    b.det(800, 110, 'Bucket detector', this.s.run ? .5 : 0, 't'); b.box(806, 310, 88, 52, 'Camera'); b.text(560, 336, 'Partner photons, no object in this path');
+    b.wire([[818, 110], [925, 110], [925, 190]]); b.wire([[852, 310], [925, 310], [925, 230]]); b.box(925, 210, 78, 34, 'Gate');
+  },
+  out(g, W) {
+    this.paint(this.cv[1], this.raw); this.paint(this.cv[2], this.gat);
+    const gap = 12, t = Math.min((W - 32 - 2 * gap) / 3, 230), x0 = (W - 3 * t - 2 * gap) / 2, lab = ['Object, seen by no camera', 'Camera, every photon', 'Camera, gated by the bucket'];
+    g.imageSmoothingEnabled = false;
+    for (let i = 0; i < 3; i++) {
+      const x = x0 + i * (t + gap); g.drawImage(this.cv[i], x, 14, t, t);
+      g.save(); g.font = `500 ${t < 130 ? 10.5 : 12}px ${UI}`; g.fillStyle = C.ink; g.textAlign = 'center'; g.textBaseline = 'top';
+      const words = lab[i].split(', '); if (t < 170) { g.fillText(words[0], x + t / 2, t + 22); g.fillStyle = C.muted; g.fillText(words[1], x + t / 2, t + 37); } else g.fillText(lab[i], x + t / 2, t + 24); g.restore();
+    }
+  },
+  readouts() { return [['Pairs detected', num(this.N)], ['Bucket clicks', num(this.bk)], ['Pairs passing the object', this.N ? pc(this.bk / this.N, 1) : '–']]; }
+});
+
+/* =================================================================== */
+const TIERS = {
+  laser: { title: 'Laser beam', sub: 'A plain laser is enough. Wave optics explains the result.', eyebrow: 'Laser beam · wave optics' },
+  photon: { title: 'Photon counting', sub: 'Needs single photons or entangled pairs and coincidence counting.', eyebrow: 'Photon counting · single photons and pairs' }
+};
+const app = $('#app'), benchCv = $('#bench'), outCv = $('#out');
+let cur = null, dirty = true, last = 0;
+
+function buildNav() {
+  const rail = $('#rail');
+  for (const t of ['laser', 'photon']) {
+    const grp = el('div', 'grp'); grp.style.setProperty('--g', `var(--${t === 'laser' ? 'red' : 'violet'})`);
+    grp.append(el('h2', '', TIERS[t].title), el('p', 'sub', TIERS[t].sub));
+    EXPS.filter(e => e.tier === t).forEach(e => { const bt = el('button', '', e.nav); bt.type = 'button'; bt.dataset.id = e.id; bt.addEventListener('click', () => mount(e.id)); grp.append(bt); });
+    rail.append(grp);
+  }
+}
+function changed(exp, c) { if (c && c.clear && exp.reset) exp.reset(); exp._refresh(); dirty = true; }
+function buildControls(exp) {
+  const f = $('#controls'); f.textContent = ''; const refresh = [];
+  exp.controls.forEach((c, idx) => {
+    const id = `c-${exp.id}-${c.key || 'b' + idx}`; let row;
+    const gate = nodes => refresh.push(() => { const off = !!(c.when && !c.when(exp.s)); row.classList.toggle('off', off); nodes.forEach(n => { n.disabled = off; }); });
+    if (c.type === 'range') {
+      row = el('div', 'ctl'); const lab = el('label'); lab.htmlFor = id; const out = el('span', 'val'); lab.append(el('span', '', c.label), out);
+      const inp = el('input'); inp.type = 'range'; inp.id = id; inp.min = c.min; inp.max = c.max; inp.step = c.step || 1; inp.value = exp.s[c.key];
+      inp.addEventListener('input', () => { exp.s[c.key] = +inp.value; if (c.grab) exp.s[c.grab] = false; changed(exp, c); });
+      refresh.push(() => { if (document.activeElement !== inp || exp.s[c.grab]) inp.value = exp.s[c.key]; out.textContent = c.fmt(exp.s[c.key]); });
+      gate([inp]); row.append(lab, inp);
+    } else if (c.type === 'check') {
+      row = el('label', 'sw'); const inp = el('input'); inp.type = 'checkbox'; inp.id = id; inp.checked = exp.s[c.key];
+      inp.addEventListener('change', () => { exp.s[c.key] = inp.checked; changed(exp, c); });
+      refresh.push(() => { inp.checked = exp.s[c.key]; }); gate([inp]); row.append(inp, el('span', '', c.label));
+    } else if (c.type === 'seg') {
+      row = el('fieldset', 'seg'); row.append(el('legend', '', c.label)); const opts = el('div', 'opts'), ins = [];
+      c.options.forEach(([v, t]) => { const l = el('label'), inp = el('input'); inp.type = 'radio'; inp.name = id; inp.id = id + '-' + v; inp.value = v; inp.checked = exp.s[c.key] === v;
+        inp.addEventListener('change', () => { exp.s[c.key] = v; changed(exp, c); }); ins.push(inp); l.append(inp, el('span', '', t)); opts.append(l); });
+      refresh.push(() => ins.forEach(i => { i.checked = exp.s[c.key] === i.value; })); gate(ins); row.append(opts);
+    } else {
+      row = el('div', 'btns'); const bs = [];
+      c.items.forEach((it, j) => { const bt = el('button', 'b' + (it.ghost ? ' ghost' : '')); bt.type = 'button'; bt.id = id + '-' + j; bt.addEventListener('click', () => { it.fn(exp); changed(exp); }); refresh.push(() => { bt.textContent = it.label(exp.s); }); bs.push(bt); row.append(bt); });
+      gate(bs);
+    }
+    f.append(row);
+  });
+  exp._refresh = () => refresh.forEach(fn => fn()); exp._refresh();
+}
+function showReadouts(exp) {
+  const dl = $('#readouts'), rows = exp.readouts();
+  if (dl.children.length !== rows.length) { dl.textContent = ''; rows.forEach(() => { const d = el('div'); d.append(el('dt'), el('dd')); dl.append(d); }); }
+  rows.forEach((r, i) => { const d = dl.children[i]; if (d.firstChild.textContent !== r[0]) d.firstChild.textContent = r[0]; if (d.lastChild.textContent !== r[1]) d.lastChild.textContent = r[1]; });
+}
+function mount(id) {
+  const exp = EXPS.find(e => e.id === id) || EXPS[0]; cur = exp; app.dataset.tier = exp.tier;
+  $('#tier').textContent = TIERS[exp.tier].eyebrow; $('#name').textContent = exp.name; $('#lead').textContent = exp.lead;
+  $('#see').textContent = exp.see; $('#why').textContent = exp.why; $('#kit').textContent = exp.kit;
+  $('#benchCap').textContent = exp.benchCap; $('#outCap').textContent = exp.outCap;
+  document.querySelectorAll('#rail button').forEach(b => { const on = b.dataset.id === exp.id; b.setAttribute('aria-current', on ? 'true' : 'false'); if (on && b.scrollIntoView && innerWidth <= 860) b.scrollIntoView({ block: 'nearest', inline: 'center' }); });
+  if (!exp._init) { if (exp.init) exp.init(); exp._init = true; }
+  buildControls(exp); dirty = true;
+  try { history.replaceState(null, '', '#' + exp.id); } catch (e) { /* sandboxed frame: the hash is a convenience only */ }
+}
+function draw() {
+  readColors();
+  { const [g, W] = fit(benchCv); cur.bench(kit(g, W)); }
+  { const [g, W, H] = fit(outCv, Math.round(cur.outH(outCv.clientWidth))); cur.out(g, W, H); }
+  showReadouts(cur);
+}
+function loop(t) {
+  const dt = Math.min(.1, (t - last) / 1000 || 0); last = t;
+  if (cur) { const live = cur.tick ? cur.tick(dt) : false; if (live || dirty) { dirty = false; draw(); } }
+  requestAnimationFrame(loop);
+}
+buildNav();
+$('#controls').addEventListener('submit', e => e.preventDefault());
+addEventListener('resize', () => { dirty = true; });
+addEventListener('hashchange', () => { const id = location.hash.slice(1); if (cur && id && id !== cur.id && EXPS.some(e => e.id === id)) mount(id); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { dirty = true; });
+new MutationObserver(() => { dirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { dirty = true; });
+mount(location.hash.slice(1));
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
